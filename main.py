@@ -73,7 +73,7 @@ class Pomodoro(CTk):
         # event variable serves for the pause logic:
         self.event = threading.Event()
         self.event.set()
-
+        # Start the countdown thread:
         counting_worker = threading.Thread(target=self._countdown, args=[self.startingTime], daemon=True)
         counting_worker.start()
 
@@ -84,8 +84,11 @@ class Pomodoro(CTk):
             time.sleep(1)
             start -= 1
             self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(start)))
+        
+        # Reset the button state back to normal and running/reset states as well as the Timer to the initial time.
         self.buttonStart.configure(state=NORMAL)
         self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(self.startingTime)))
+        
         self.isRunning = False
         self.isReset = False
             
