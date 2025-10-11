@@ -14,7 +14,7 @@ class Pomodoro(CTk):
         self.title('Pomodoro Timer')
 
         self.workTime: float = 2 # 25 min study time
-        self.breakTime: float = 5.0 * 60.0 # 5 min break time
+        self.breakTime: float = 5 # 5 min break time
 
         self.isPaused: bool = False
         self.isRunning: bool = False
@@ -55,33 +55,35 @@ class Pomodoro(CTk):
     def pause_logic(self):
         if self.isRunning:
             if self.isPaused:
-                self.event.set()
+                self.pause_event.set()
                 self.isPaused = False
             else:
-                self.event.clear()
+                self.pause_event.clear()
                 self.isPaused = True
     
-    def reset_logic(self):
-        if self.isRunning:
-            self.isReset = True
-        else:
-            self.isReset = False
     
     def start_logic(self):
         if not self.isRunning:
             self.isRunning = True
             self.buttonStart.configure(state=DISABLED)
             # event variable serves for the pause logic:
-            self.event = threading.Event()
-            self.event.set()
+            self.pause_event = threading.Event()
+            self.pause_event.set()
             # Start the countdown thread:
             counting_worker = threading.Thread(target=self._countdown, args=[self.workTime], daemon=True)
             counting_worker.start()
 
+    def reset_logic(self):
+        if self.isRunning:
+            self.isReset = True
+        else:
+            self.isReset = False
+
+
     def _countdown(self, start: float):
         # Work time logic:
         while start > 0 and not self.isReset:
-            self.event.wait()
+            self.pause_event.wait()
             time.sleep(0.5)
             start -= 0.5
             self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(start)))
@@ -90,7 +92,7 @@ class Pomodoro(CTk):
         if start <= 0:
             start = self.breakTime # 5 minutes break
             while start > 0 and not self.isReset:
-                self.event.wait()
+                self.pause_event.wait()
                 time.sleep(0.5)
                 start -= 0.5
                 self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(start)))
@@ -100,7 +102,6 @@ class Pomodoro(CTk):
         self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(self.workTime)))
         
         self.isRunning = False
-        self.isReset = False
             
             
 app = Pomodoro()
