@@ -26,7 +26,6 @@ class Pomodoro(CTk):
         self.grid_system()
         self.timer_label()
         self.buttons()
-        self.stop_thread()
 
     def grid_system(self):
         self.grid_columnconfigure((0,1), weight=1)
@@ -54,6 +53,17 @@ class Pomodoro(CTk):
     def fun(self):
         chosen_sound = random.choices(["assests/sounds/bell.mp3", "assests/sounds/tubular_bells.mp3"], weights=[0.9, 0.1], k=1)[0]
         self.sound = chosen_sound
+
+    def play_sound(self):
+        self.sound_worker = threading.Thread(target=playsound.playsound, args=[self.sound], daemon=True) # Thread for playing sound
+        self.sound_worker.start()
+
+    def reset_logic(self):
+        if self.is_running:
+            self.is_reset = True
+        else:
+            self.is_reset = False
+    
     def start_logic(self):
         if not self.is_running:
             self.is_running = True
@@ -61,23 +71,25 @@ class Pomodoro(CTk):
             # Start the countdown thread:
             counting_worker = threading.Thread(target=self._countdown, daemon=True) # Creates new thread for counting
             counting_worker.start()
+            self.check(counting_worker)
 
-    def play_sound(self):
-        sound_worker = threading.Thread(target=playsound.playsound, args=[self.sound], daemon=True) # Thread for playing sound
-        sound_worker.start()
-
-    def reset_logic(self):
-        if self.is_running:
-            self.is_reset = True
+    def check(self, t):
+        '''
+        Checks every 5 milliseconds whether the counting worker is running. 
+        If not it will reset everything back to the default value.
+        '''
+        if t.is_alive():
+            self.after(5, self.check, t)
         else:
-            self.is_reset = False
-        
-    def stop_thread(self):
-        # Resets the timer to the original value and continues the thread to stop it when isReset is True
-        if self.is_reset:
+            self.button_start.configure(state=NORMAL)
             self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(self.work_time)))
+            
+            self.is_running = False
+            self.is_reset = False
 
     def _countdown(self):
+        '''Decrements the work or break time variable every .1s and displays it in the GUI 
+        as well as playing a ringtone between each intervals of time.'''
         # Work time logic:
         while not self.is_reset:
             start = self.work_time + .1
@@ -96,13 +108,6 @@ class Pomodoro(CTk):
                 self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(start)))
             if not self.is_reset: self.play_sound()
 
-
-        # Reset the button state back to normal and running/reset states as well as the Timer to the initial time.
-        self.button_start.configure(state=NORMAL)
-        self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(self.work_time)))
-        
-        self.is_running = False
-        self.is_reset = False
             
             
 app = Pomodoro()
