@@ -1,6 +1,7 @@
 from customtkinter import * # type: ignore
 import threading
 import time
+import playsound
 
 
 # TODO: add a ringtone when timer ends
@@ -13,11 +14,11 @@ class Pomodoro(CTk):
         self.geometry('800x650')
         self.title('Pomodoro Timer')
 
-        self.workTime: float = 90 # 25 min study time
-        self.breakTime: float = 5 # 5 min break time
-        
-        self.isRunning: bool = False
-        self.isReset: bool = False
+        self.work_time: float = 6 # 25 min study time
+        self.break_time: float = 3 # 5 min break time
+
+        self.is_running: bool = False
+        self.is_reset: bool = False
 
         self.grid_system()
         self.timer_label()
@@ -31,68 +32,68 @@ class Pomodoro(CTk):
     def timer_label(self):
         FontManager.load_font("assests/MRKMaston-Bold.ttf")
         MRK_font = CTkFont(family="MRK Maston Bold", weight='bold', size=80)
-        self.TimeLabel = CTkLabel(self, text=time.strftime("%M:%S", time.gmtime(self.workTime))
+        self.time_label = CTkLabel(self, text=time.strftime("%M:%S", time.gmtime(self.work_time))
                                   , font=MRK_font)
 
-        self.TimeLabel.grid(row=0, column=0, columnspan=2, pady=(0,10))
+        self.time_label.grid(row=0, column=0, columnspan=2, pady=(0,10))
     
     def buttons(self):
-        self.buttonStart = CTkButton(self, width=50, text="Start",
+        self.button_start = CTkButton(self, width=100, text="Start",
                                     corner_radius=32, command=self.start_logic)
         
-        self.buttonStart.grid(row=1, column=0, columnspan=2, padx=20, pady=(10, 4))
-
+        self.button_start.grid(row=1, column=0, columnspan=2, padx=20, pady=(10, 4))
         
-        self.buttonReset = CTkButton(self, width=50, text="Reset",
+        self.button_reset = CTkButton(self, width=100, text="Reset",
                                     corner_radius=32, command=self.reset_logic)
         
-        self.buttonReset.grid(row=3, column=0, columnspan=2, padx=20, pady=(10, 4))
+        self.button_reset.grid(row=2, column=0, columnspan=2, padx=20, pady=(10, 4))
     
     
     
     def start_logic(self):
-        if not self.isRunning:
-            self.isRunning = True
-            self.buttonStart.configure(state=DISABLED)
+        if not self.is_running:
+            self.is_running = True
+            self.button_start.configure(state=DISABLED)
             # event variable serves for the pause logic:
             self.pause_event = threading.Event()
             self.pause_event.set() # .set() = unpaused , .clear() = paused
             # Start the countdown thread:
-            counting_worker = threading.Thread(target=self._countdown, args=[self.workTime], daemon=True) # Creates new thread
+            counting_worker = threading.Thread(target=self._countdown, daemon=True) # Creates new thread
             counting_worker.start()
 
     def reset_logic(self):
-        if self.isRunning:
-            self.isReset = True
+        if self.is_running:
+            self.is_reset = True
         else:
-            self.isReset = False
+            self.is_reset = False
         
     def stop_thread(self):
         # Resets the timer to the original value and continues the thread to stop it when isReset is True
-        if self.isReset:
-            self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(self.workTime)))
+        if self.is_reset:
+            self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(self.work_time)))
 
-    def _countdown(self, start: float):
+    def _countdown(self):
         # Work time logic:
-        while start > 0 and not self.isReset:
-            time.sleep(0.5)
-            start -= 0.5
-            self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(start)))
+        while not self.is_reset:
+            start = self.work_time + .1
+            while start > 0.1 and not self.is_reset:
+                time.sleep(0.1)
+                start -= 0.1
+                self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(start)))
         
-        # Break time logic:
-        if start <= 0:
-            start = self.breakTime # 5 minutes break
-            while start > 0 and not self.isReset:
-                time.sleep(0.5)
-                start -= 0.5
-                self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(start)))
+            # Break time logic:
+            start = self.break_time + .1 # 5 minutes break
+            while start > 0.1 and not self.is_reset:
+                time.sleep(0.1)
+                start -= 0.1
+                self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(start)))
 
         # Reset the button state back to normal and running/reset states as well as the Timer to the initial time.
-        self.buttonStart.configure(state=NORMAL)
-        self.TimeLabel.configure(text=time.strftime("%M:%S", time.gmtime(self.workTime)))
+        self.button_start.configure(state=NORMAL)
+        self.time_label.configure(text=time.strftime("%M:%S", time.gmtime(self.work_time)))
         
-        self.isRunning = False
-        self.isReset = False
+        self.is_running = False
+        self.is_reset = False
             
             
 app = Pomodoro()
